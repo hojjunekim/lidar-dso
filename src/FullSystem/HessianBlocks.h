@@ -135,6 +135,10 @@ struct FrameHessian
 	float frameEnergyTH;	// set dynamically depending on tracking residual
 	float ab_exposure;
 
+	// lidar point cloud
+	std::vector<std::vector<float>>* ptCloud;
+	float* map_pt;
+	
 	bool flaggedForMarginalization;
 
 	std::vector<PointHessian*> pointHessians;				// contains all ACTIVE points.

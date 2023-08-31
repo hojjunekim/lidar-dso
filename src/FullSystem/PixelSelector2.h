@@ -53,6 +53,8 @@ private:
 
 	Eigen::Vector3i select(const FrameHessian* const fh,
 			float* map_out, int pot, float thFactor=1);
+	Eigen::Vector3i select_custom(const FrameHessian* const fh,
+			float* map_out, int pot, float thFactor=1);
 
 
 	unsigned char* randomPattern;

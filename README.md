@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CNN-DSO: A combination of Direct Sparse Odometry and CNN Depth Prediction 
 
 ### 1. Overview
@@ -72,3 +73,7 @@ In addition to original DSO command line, you should specify the path to pre-tra
 ### 5 License
 GPLv3 license.
 I don't take any credit from DSO, Monodepth and monodepth-cpp. Please check them.
+=======
+# lidar-dso
+lidar direct SLAM
+>>>>>>> 39ee1ff6473f4b01a6316f8bf6fcd9dbc1167cca

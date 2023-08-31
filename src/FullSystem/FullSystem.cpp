@@ -56,8 +56,8 @@
 
 #include <cmath>
 
-#include <monodepth/monodepth.h>
 #include <chrono>
+#include <opencv2/opencv.hpp>
 
 namespace dso
 {
@@ -67,7 +67,7 @@ int CalibHessian::instanceCounter=0;
 
 
 
-FullSystem::FullSystem(const std::string &path_cnn) {
+FullSystem::FullSystem() {
 
     int retstat = 0;
     if (setting_logStuff) {
@@ -170,7 +170,7 @@ FullSystem::FullSystem(const std::string &path_cnn) {
     minIdJetVisTracker = -1;
     maxIdJetVisTracker = -1;
 
-	depthPredictor = new monodepth::MonoDepth(wG[0], hG[0], path_cnn);
+	// depthPredictor = new monodepth::MonoDepth(wG[0], hG[0], path_cnn);
 //	depthPredictor = new monodepth::MonoDepth(wG[0], hG[0],
 //                                  "/home/hide/catkin_ws/src/CNN-SVO/rpg_svo/monodepth-cpp/model/model_city2kitti.pb");
 }
@@ -205,12 +205,7 @@ FullSystem::~FullSystem()
 	delete coarseInitializer;
 	delete pixelSelector;
 	delete ef;
-	delete depthPredictor;
-}
-
-void FullSystem::setOriginalCalib(const VecXf &originalCalib, int originalW, int originalH)
-{
-
+	// delete depthPredictor;
 }
 
 void FullSystem::setGammaFunction(float* BInv)
@@ -861,9 +856,8 @@ void FullSystem::flagPointsForRemoval()
 }
 
 
-void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
+void FullSystem::addActiveFrame( ImageAndExposure* image, int id, std::vector<std::vector<float>>* ptCloud, float* map_pt)
 {
-
     if(isLost) return;
 	boost::unique_lock<boost::mutex> lock(trackMutex);
 
@@ -883,7 +877,9 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
 	// =========================== make Images / derivatives etc. =========================
 	fh->ab_exposure = image->exposure_time;
     fh->makeImages(image->image, &Hcalib);
-
+	
+	fh->ptCloud = ptCloud;
+	fh->map_pt = map_pt;
 
 
 
@@ -894,6 +890,7 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
 		{
 			coarseInitializer->setFirst(&Hcalib, fh, getDepthMap(fh));
 			initialized=true;
+			printf("\n### initialize frinished! ###");
 		}
 
 		return;
@@ -1364,9 +1361,9 @@ void FullSystem::initializeFromInitializerCNN(FrameHessian* newFrame)
 		printf("Initialization: keep %.1f%% (need %d, have %d)!\n", 100*keepPercentage,
 			   (int)(setting_desiredPointDensity), coarseInitializer->numPoints[0] );
 
-	cv::Mat depth = getDepthMap(firstFrame);
+	cv::Mat depth_mat = getDepthMap(newFrame);
 
-	float* depthmap_ptr = (float*) depth.data;
+	float* depthmap_ptr = (float*) depth_mat.data;
 
 	for(int i=0;i<coarseInitializer->numPoints[0];i++)
 	{
@@ -1376,6 +1373,8 @@ void FullSystem::initializeFromInitializerCNN(FrameHessian* newFrame)
 		ImmaturePoint* pt = new ImmaturePoint(point->u+0.5f,point->v+0.5f,firstFrame,point->my_type, &Hcalib);
 
 		float depth = *(depthmap_ptr + int((point->v*wG[0]+point->u+0.5f)));
+		
+		printf("depth : %f\n", depth);
 		float idepth=1.0/depth;
 		float var = 1.0/(6*depth);
 		pt->idepth_max=idepth;
@@ -1439,21 +1438,35 @@ void FullSystem::initializeFromInitializerCNN(FrameHessian* newFrame)
 
 	float* depthmap_ptr = (float*) depth.data;
 
+	float avg_depth = 0;
+	float depth_num = 0;
+	int good_num = 0;
+
 	for(int y=patternPadding+1;y<hG[0]-patternPadding-2;y++)
 		for(int x=patternPadding+1;x<wG[0]-patternPadding-2;x++)
 		{
 			int i = x+y*wG[0];
 			if(selectionMap[i]==0) continue;
+			
+			avg_depth = avg_depth + *(depthmap_ptr+i);
+			depth_num++;
 
 			ImmaturePoint* impt = new ImmaturePoint(x,y,newFrame, selectionMap[i], &Hcalib);
 			impt->idepth_max=1./(*(depthmap_ptr+i));
 			impt->idepth_min=1./(*(depthmap_ptr+i));
+			if(impt->idepth_min!=1.0){
+				good_num++;
+			}
 			if(impt->idepth_min<0) impt->idepth_min=0;
 
 			if(!std::isfinite(impt->energyTH)) delete impt;
 			else newFrame->immaturePoints.push_back(impt);
 		}
-	//printf("MADE %d IMMATURE POINTS!\n", (int)newFrame->immaturePoints.size());
+	
+	
+	printf("\naverage depth : %.1f\n", avg_depth/depth_num);
+	printf("used lidar points ratio : %.1f\n", good_num/depth_num*100);
+	// printf("MADE %d IMMATURE POINTS!\n", (int)newFrame->immaturePoints.size());
 
 }
 
@@ -1519,18 +1532,13 @@ void FullSystem::printLogLine()
 }
 
 
-
-
 cv::Mat FullSystem::getDepthMap(FrameHessian* fh){
-	cv::Mat image(hG[0], wG[0], CV_8UC1);
-    unsigned char *ptr = (unsigned char*)image.ptr();
-	for(int y = 0; y < image.rows; ++y)
-		for(int x = 0; x < image.cols; ++x)
-            ptr[y*wG[0]+x]=fh->dI[y*wG[0]+x][0];
-	cv::Mat depth;
-	cv::cvtColor ( image, image, CV_GRAY2BGR );
-	depthPredictor->inference(image, depth);
-	depth = 0.3128f / (depth + 0.00001f);
+	cv::Mat depth = cv::Mat::ones(hG[0], wG[0], CV_32FC1);
+	// cv::multiply(depth, 3, depth);
+	for(const auto& row : *fh->ptCloud){
+		int idx = static_cast<int>(row[2]);
+		depth.at<float>(idx) = row[3];
+	}
 
 	return depth;
 }

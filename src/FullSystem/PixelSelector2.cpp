@@ -189,7 +189,6 @@ int PixelSelector::makeMaps(
 		// sub-select!
 		numHave = n[0]+n[1]+n[2];
 		quotia = numWant / numHave;
-
 		// by default we want to over-sample by 40% just to be sure.
 		float K = numHave * (currentPotential+1) * (currentPotential+1);
 		idealPotential = sqrtf(K/numWant)-1;	// round down.
@@ -292,6 +291,7 @@ int PixelSelector::makeMaps(
 
 
 
+
 Eigen::Vector3i PixelSelector::select(const FrameHessian* const fh,
 		float* map_out, int pot, float thFactor)
 {
@@ -330,7 +330,6 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian* const fh,
 	memset(map_out,0,w*h*sizeof(PixelSelectorStatus));
 
 
-
 	float dw1 = setting_gradDownweightPerLevel;
 	float dw2 = dw1*dw1;
 
@@ -363,10 +362,14 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian* const fh,
 					assert(x1+x234 < w);
 					assert(y1+y234 < h);
 					int idx = x1+x234 + w*(y1+y234);
+					
 					int xf = x1+x234;
 					int yf = y1+y234;
 
 					if(xf<4 || xf>=w-5 || yf<4 || yf>h-4) continue;
+					
+					// if(yf > (4*h)/5) continue;
+					if(fh->map_pt[idx] != 1) continue;
 
 
 					float pixelTH0 = thsSmoothed[(xf>>5) + (yf>>5) * thsStep];
@@ -385,6 +388,10 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian* const fh,
 						{ bestVal2 = dirNorm; bestIdx2 = idx; bestIdx3 = -2; bestIdx4 = -2;}
 					}
 					if(bestIdx3==-2) continue;
+					
+					// if(fh->map_pt[idx] != 1) continue;
+					// if(fh->map_pt[idx] != 1 || (y1+y234) > 4/5*h) continue;
+					// if((y1+y234) > 4/5*h) continue;
 
 					float ag1 = mapmax1[(int)(xf*0.5f+0.25f) + (int)(yf*0.5f+0.25f)*w1];
 					if(ag1 > pixelTH1*thFactor)
@@ -437,6 +444,38 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian* const fh,
 	return Eigen::Vector3i(n2,n3,n4);
 }
 
+
+Eigen::Vector3i PixelSelector::select_custom(const FrameHessian* const fh,
+		float* map_out, int pot, float thFactor)
+{
+
+	Eigen::Vector3f const * const map0 = fh->dI;
+
+	float * mapmax0 = fh->absSquaredGrad[0];
+	float * mapmax1 = fh->absSquaredGrad[1];
+	float * mapmax2 = fh->absSquaredGrad[2];
+
+
+	int w = wG[0];
+	int w1 = wG[1];
+	int w2 = wG[2];
+	int h = hG[0];
+
+	memset(map_out,0,w*h*sizeof(PixelSelectorStatus));
+
+	for(const auto& row : *fh->ptCloud){
+		int idx = static_cast<int>(row[2]);
+		map_out[idx] = 1;
+	}
+
+	int ptnum = fh->ptCloud->size();
+	int n2 = ptnum;
+	int n3=0, n4=0;
+	
+	printf("\nselected custom points # : %d\n", ptnum);
+
+	return Eigen::Vector3i(n2,n3,n4);
+}
 
 }
 

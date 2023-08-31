@@ -41,7 +41,7 @@
 #include "FullSystem/PixelSelector2.h"
 
 #include <math.h>
-#include <monodepth/monodepth.h>
+#include <opencv2/opencv.hpp>
 
 namespace dso
 {
@@ -133,11 +133,11 @@ inline bool eigenTestNan(const MatXX &m, std::string msg)
 class FullSystem {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	FullSystem(const std::string &path_cnn);
+	FullSystem();
 	virtual ~FullSystem();
 
 	// adds a new frame, and creates point & residual structs.
-	void addActiveFrame(ImageAndExposure* image, int id);
+	void addActiveFrame(ImageAndExposure* image, int id, std::vector<std::vector<float>>* ptCloud = nullptr, float* map_pt = nullptr);
 
 	// marginalizes a frame. drops / marginalizes points & residuals.
 	void marginalizeFrame(FrameHessian* frame);
@@ -161,9 +161,8 @@ public:
 
 
 	void setGammaFunction(float* BInv);
-	void setOriginalCalib(const VecXf &originalCalib, int originalW, int originalH);
 
-	monodepth::MonoDepth* depthPredictor;
+	// monodepth::MonoDepth* depthPredictor;
 
 private:
 

@@ -54,7 +54,6 @@ std::string vignette = "";
 std::string gammaCalib = "";
 std::string source = "";
 std::string calib = "";
-std::string cnn="";
 double rescale = 1;
 bool reverse = false;
 bool disableROS = false;
@@ -319,12 +318,6 @@ void parseArgument(char* arg)
 		}
 		return;
 	}
-	if(1==sscanf(arg,"cnn=%s",buf))
-	{
-		cnn = buf;
-		printf("loading depth predictor from %s!\n", cnn.c_str());
-		return;
-	}
 
 	if(1==sscanf(arg,"mode=%d",&option))
 	{
@@ -395,7 +388,7 @@ int main( int argc, char** argv )
 	}
 
 
-	FullSystem* fullSystem = new FullSystem(cnn);
+	FullSystem* fullSystem = new FullSystem();
 	fullSystem->setGammaFunction(reader->getPhotometricGamma());
 	fullSystem->linearizeOperation = (playbackSpeed==0);
 
@@ -512,7 +505,7 @@ int main( int argc, char** argv )
 
                     for(IOWrap::Output3DWrapper* ow : wraps) ow->reset();
 
-                    fullSystem = new FullSystem(cnn);
+                    fullSystem = new FullSystem();
                     fullSystem->setGammaFunction(reader->getPhotometricGamma());
                     fullSystem->linearizeOperation = (playbackSpeed==0);
 

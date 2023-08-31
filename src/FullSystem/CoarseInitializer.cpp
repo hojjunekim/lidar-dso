@@ -108,11 +108,11 @@ void CoarseInitializer::setFirst(CalibHessian* HCalib, FrameHessian* newFrameHes
 	for(int lvl=0; lvl<pyrLevelsUsed; lvl++)
     {
         sel.currentPotential = 3;
-        int npts,npts_right;
+        int npts;
         if(lvl == 0)
         {
             npts = sel.makeMaps(firstFrame, statusMap,densities[lvl]*w[0]*h[0],1,false,2);
-
+			printf("\nmake maps finished!");
         }
         else
         {
