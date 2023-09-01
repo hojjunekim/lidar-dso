@@ -451,7 +451,7 @@ Vec4 FullSystem::trackNewCoarse(FrameHessian* fh) {
 		// do we have a new winner?
 		if(trackingIsGood && std::isfinite((float)coarseTracker->lastResiduals[0]) && !(coarseTracker->lastResiduals[0] >=  achievedRes[0]))
 		{
-			//printf("take over. minRes %f -> %f!\n", achievedRes[0], coarseTracker->lastResiduals[0]);
+			// printf("take over. minRes %f -> %f! ", achievedRes[0], coarseTracker->lastResiduals[0]);
 			flowVecs = coarseTracker->lastFlowIndicators;
 			aff_g2l = aff_g2l_this;
 			lastF_2_fh = lastF_2_fh_this;
@@ -926,12 +926,14 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id, std::vector<st
 
 			// BRIGHTNESS CHECK
 			needToMakeKF = allFrameHistory.size()== 1 ||
-					setting_kfGlobalWeight*setting_maxShiftWeightT *  sqrtf((double)tres[1]) / (wG[0]+hG[0]) +
-					setting_kfGlobalWeight*setting_maxShiftWeightR *  sqrtf((double)tres[2]) / (wG[0]+hG[0]) +
-					setting_kfGlobalWeight*setting_maxShiftWeightRT * sqrtf((double)tres[3]) / (wG[0]+hG[0]) +
+					setting_kfGlobalWeight*setting_maxShiftWeightT *  sqrtf((double)tres[1]) +
+					setting_kfGlobalWeight*setting_maxShiftWeightR *  sqrtf((double)tres[2]) +
+					setting_kfGlobalWeight*setting_maxShiftWeightRT * sqrtf((double)tres[3]) +
 					setting_kfGlobalWeight*setting_maxAffineWeight * fabs(logf((float)refToFh[0])) > 1 ||
 					2*coarseTracker->firstCoarseRMSE < tres[0];
-
+			printf("[KF] ");
+			needToMakeKF ? printf("KF O ") : printf("KF X ");
+			printf("tres1: %.1f tres3: %.1f refToFh: %.1f\n", sqrtf((double)tres[1]), sqrtf((double)tres[3]), fabs(logf((float)refToFh[0])));
 		}
 
 
@@ -1374,7 +1376,6 @@ void FullSystem::initializeFromInitializerCNN(FrameHessian* newFrame)
 
 		float depth = *(depthmap_ptr + int((point->v*wG[0]+point->u+0.5f)));
 		
-		printf("depth : %f\n", depth);
 		float idepth=1.0/depth;
 		float var = 1.0/(6*depth);
 		pt->idepth_max=idepth;
@@ -1464,8 +1465,8 @@ void FullSystem::initializeFromInitializerCNN(FrameHessian* newFrame)
 		}
 	
 	
-	printf("\naverage depth : %.1f\n", avg_depth/depth_num);
-	printf("used lidar points ratio : %.1f\n", good_num/depth_num*100);
+	// printf("\naverage depth : %.1f\n", avg_depth/depth_num);
+	// printf("used lidar points ratio : %.1f\n", good_num/depth_num*100);
 	// printf("MADE %d IMMATURE POINTS!\n", (int)newFrame->immaturePoints.size());
 
 }

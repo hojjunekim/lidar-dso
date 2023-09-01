@@ -703,7 +703,7 @@ bool CoarseTracker::trackNewestCoarse(
 		IOWrap::Output3DWrapper* wrap)
 {
 	debugPlot = setting_render_displayCoarseTrackingFull;
-	debugPrint = false;
+	debugPrint = true;
 
 	assert(coarsestLvl < 5 && coarsestLvl < pyrLevelsUsed);
 
@@ -742,14 +742,14 @@ bool CoarseTracker::trackNewestCoarse(
 		if(debugPrint)
 		{
 			Vec2f relAff = AffLight::fromToVecExposure(lastRef->ab_exposure, newFrame->ab_exposure, lastRef_aff_g2l, aff_g2l_current).cast<float>();
-			printf("lvl%d, it %d (l=%f / %f) %s: %.3f->%.3f (%d -> %d) (|inc| = %f)! \t",
-					lvl, -1, lambda, 1.0f,
-					"INITIA",
-					0.0f,
-					resOld[0] / resOld[1],
-					 0,(int)resOld[1],
-					0.0f);
-			std::cout << refToNew_current.log().transpose() << " AFF " << aff_g2l_current.vec().transpose() <<" (rel " << relAff.transpose() << ")\n";
+			// printf("lvl%d, it %d (l=%.2f / %.2f) %s: %.2f->%.2f (%d -> %d) (|inc| = %f)! \t\n",
+			// 		lvl, -1, lambda, 1.0f,
+			// 		"INITIA",
+			// 		0.0f,
+			// 		resOld[0] / resOld[1],
+			// 		 0,(int)resOld[1],
+			// 		0.0f);
+			std::cout << refToNew_current.translation().transpose() << " AFF " << aff_g2l_current.vec().transpose() <<" (rel " << relAff.transpose() << ")\n";
 		}
 
 
@@ -810,15 +810,15 @@ bool CoarseTracker::trackNewestCoarse(
 			if(debugPrint)
 			{
 				Vec2f relAff = AffLight::fromToVecExposure(lastRef->ab_exposure, newFrame->ab_exposure, lastRef_aff_g2l, aff_g2l_new).cast<float>();
-				printf("lvl %d, it %d (l=%f / %f) %s: %.3f->%.3f (%d -> %d) (|inc| = %f)! \t",
-						lvl, iteration, lambda,
-						extrapFac,
-						(accept ? "ACCEPT" : "REJECT"),
-						resOld[0] / resOld[1],
-						resNew[0] / resNew[1],
-						(int)resOld[1], (int)resNew[1],
-						inc.norm());
-				std::cout << refToNew_new.log().transpose() << " AFF " << aff_g2l_new.vec().transpose() <<" (rel " << relAff.transpose() << ")\n";
+				// printf("lvl %d, it %d (l=%.2f / %.2f) %s: %.2f->%.2f (%d -> %d) (|inc| = %.3f)! \t\n",
+				// 		lvl, iteration, lambda,
+				// 		extrapFac,
+				// 		(accept ? "ACCEPT" : "REJECT"),
+				// 		resOld[0] / resOld[1],
+				// 		resNew[0] / resNew[1],
+				// 		(int)resOld[1], (int)resNew[1],
+				// 		inc.norm());
+				std::cout << refToNew_new.translation().transpose() << " AFF " << aff_g2l_new.vec().transpose() <<" (rel " << relAff.transpose() << ")\n";
 			}
 			if(accept)
 			{
